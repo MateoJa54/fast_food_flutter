@@ -1,0 +1,49 @@
+{
+  "project_info": {
+    "project_number": "334119315414",
+    "firebase_url": "https://fastfood-app-9a3fa-default-rtdb.firebaseio.com",
+    "project_id": "fastfood-app-9a3fa",
+    "storage_bucket": "fastfood-app-9a3fa.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:334119315414:android:91067cf887be81c53c2677",
+        "android_client_info": {
+          "package_name": "com.example.fastfood_app_flutte"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBWJSMWQEoE2I3t62bJtWmJRmscIslZq_Y"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:334119315414:android:eb4284e950a818333c2677",
+        "android_client_info": {
+          "package_name": "com.example.fastfood_app_flutter"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBWJSMWQEoE2I3t62bJtWmJRmscIslZq_Y"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
