@@ -35,6 +35,14 @@ class FCMRegisterService {
           await ds.registerToken(token: newToken, platform: 'android');
         }
       });
+      FirebaseMessaging.onMessage.listen((m) {
+  debugPrint('FCM onMessage title=${m.notification?.title} body=${m.notification?.body} data=${m.data}');
+});
+
+FirebaseMessaging.onMessageOpenedApp.listen((m) {
+  debugPrint('FCM onMessageOpenedApp data=${m.data}');
+});
+
 
       debugPrint('FCM token registrado OK');
     } catch (e) {

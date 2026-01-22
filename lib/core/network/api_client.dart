@@ -2,7 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../config/env.dart';
 import 'auth_interceptor.dart';
-
+import 'package:flutter/foundation.dart';
 class ApiClient {
   ApiClient(this._auth) {
     dio = Dio(
@@ -13,7 +13,7 @@ class ApiClient {
         headers: {'Content-Type': 'application/json'},
       ),
     );
-
+debugPrint('BASE_URL: ${dio.options.baseUrl}');
     dio.interceptors.add(AuthInterceptor(_auth));
   }
 

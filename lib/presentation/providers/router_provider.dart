@@ -20,8 +20,7 @@ import '../view/orders/create_order_page.dart';
 import '../view/orders/orders_history_page.dart';
 import '../view/recommendation/recommendations_page.dart';
 
-
-final appRouterProvider = Provider<GoRouter>((ref) {
+final routerProvider = Provider<GoRouter>((ref) {
   final auth = FirebaseAuth.instance;
 
   return GoRouter(
@@ -46,21 +45,16 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/cart', builder: (_, __) => const CartPage()),
       GoRoute(path: '/orders', builder: (_, __) => const OrdersHistoryPage()),
       GoRoute(path: '/pay', builder: (_, __) => const PaymentSimulatePage()),
-      GoRoute(
-  path: '/recommendations',
-  builder: (_, __) => const RecommendationsPage(),
-),
-
-GoRoute(path: '/create-order', builder: (_, __) => const CreateOrderPage()),
-
+      GoRoute(path: '/recommendations', builder: (_, __) => const RecommendationsPage()),
+      GoRoute(path: '/create-order', builder: (_, __) => const CreateOrderPage()),
       GoRoute(path: '/checkout', builder: (_, __) => const CheckoutPage()),
-GoRoute(
-  path: '/orders/:id',
-  builder: (context, state) {
-    final id = state.pathParameters['id']!;
-    return OrderTrackingPage(orderId: id);
-  },
-),
+      GoRoute(
+        path: '/orders/:id',
+        builder: (context, state) {
+          final id = state.pathParameters['id']!;
+          return OrderTrackingPage(orderId: id);
+        },
+      ),
       GoRoute(
         path: '/products/:categoryId',
         builder: (context, state) {
@@ -84,6 +78,7 @@ GoRoute(
     ],
   );
 });
+
 
 class GoRouterRefreshAuth extends ChangeNotifier {
   GoRouterRefreshAuth(FirebaseAuth auth) {

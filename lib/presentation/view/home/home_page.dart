@@ -1,12 +1,12 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../widgets/cart_icon_button.dart';
-import '../../services/fcm_register_service.dart';
-
 import '../widgets/recommendations_section.dart';
+import '../../services/fcm_register_service.dart';
 
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
@@ -24,9 +24,20 @@ class _HomePageState extends ConsumerState<HomePage> {
   void initState() {
     super.initState();
 
-    // Registra token una sola vez al entrar al home (post-login)
+    // 1) Registrar token FCM una sola vez al entrar (post-login)
     Future.microtask(() async {
       await ref.read(fcmRegisterServiceProvider).registerCurrentDeviceToken();
+    });
+
+    // 2) Foreground: si llega notificación con la app abierta, mostramos SnackBar
+    FirebaseMessaging.onMessage.listen((message) {
+      final title = message.notification?.title ?? 'Notificación';
+      final body = message.notification?.body ?? '';
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('$title: $body')),
+      );
     });
   }
 
@@ -54,6 +65,7 @@ class _HomePageState extends ConsumerState<HomePage> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          // Header
           Card(
             child: Padding(
               padding: const EdgeInsets.all(14),
@@ -75,9 +87,6 @@ class _HomePageState extends ConsumerState<HomePage> {
                           style: const TextStyle(fontSize: 12),
                           overflow: TextOverflow.ellipsis,
                         ),
-                        const RecommendationsSection(limit: 5),
-const SizedBox(height: 14),
-
                       ],
                     ),
                   ),
@@ -90,9 +99,21 @@ const SizedBox(height: 14),
               ),
             ),
           ),
+
           const SizedBox(height: 14),
-          const Text('Accesos rápidos', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+
+          // Recomendaciones IA (sección “Para ti”)
+          const RecommendationsSection(limit: 5),
+
+          const SizedBox(height: 18),
+
+          // Accesos rápidos
+          const Text(
+            'Accesos rápidos',
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+          ),
           const SizedBox(height: 10),
+
           _QuickCard(
             title: 'Ordenar ahora',
             subtitle: 'Explora categorías y arma tu combo',
@@ -101,6 +122,7 @@ const SizedBox(height: 14),
             primary: true,
           ),
           const SizedBox(height: 10),
+
           _QuickCard(
             title: 'Locales',
             subtitle: 'Ver tiendas disponibles y ubicación',
@@ -108,6 +130,7 @@ const SizedBox(height: 14),
             onTap: () => context.push('/stores'),
           ),
           const SizedBox(height: 10),
+
           _QuickCard(
             title: 'Mis pedidos',
             subtitle: 'Historial y tracking de órdenes',
@@ -115,6 +138,7 @@ const SizedBox(height: 14),
             onTap: () => context.push('/orders'),
           ),
           const SizedBox(height: 10),
+
           _QuickCard(
             title: 'Carrito',
             subtitle: 'Revisa tu pedido antes de pagar',

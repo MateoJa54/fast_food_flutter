@@ -2,29 +2,49 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
 
-import 'presentation/providers/router_provider.dart';
+import 'core/services/local_notifications_service.dart';
+import 'presentation/providers/fcm_providers.dart';
+import 'presentation/providers/router_provider.dart'; // tu router actual
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
-  runApp(const ProviderScope(child: FastFoodApp()));
+
+  // Inicializa canales de notificación (Android 8+)
+  await LocalNotificationsService.instance.init();
+
+  runApp(const ProviderScope(child: AppBootstrap()));
 }
 
-class FastFoodApp extends ConsumerWidget {
-  const FastFoodApp({super.key});
+class AppBootstrap extends ConsumerStatefulWidget {
+  const AppBootstrap({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final router = ref.watch(appRouterProvider);
+  ConsumerState<AppBootstrap> createState() => _AppBootstrapState();
+}
 
+class _AppBootstrapState extends ConsumerState<AppBootstrap> {
+  bool _inited = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    if (_inited) return;
+    _inited = true;
+
+    // Inicializa FCM solo 1 vez
+    Future.microtask(() async {
+      await ref.read(fcmServiceProvider).init();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final router = ref.watch(routerProvider);
     return MaterialApp.router(
-      title: 'FastFood Ordering',
       debugShowCheckedModeBanner: false,
       routerConfig: router,
-      theme: ThemeData(
-        useMaterial3: true,
-        colorSchemeSeed: Colors.red,
-      ),
     );
   }
 }
