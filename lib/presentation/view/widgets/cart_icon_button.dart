@@ -11,6 +11,7 @@ class CartIconButton extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final cart = ref.watch(cartProvider);
     final count = cart.items.fold<int>(0, (sum, i) => sum + i.qty);
+    final scheme = Theme.of(context).colorScheme;
 
     return IconButton(
       tooltip: 'Carrito',
@@ -21,13 +22,23 @@ class CartIconButton extends ConsumerWidget {
           const Icon(Icons.shopping_cart),
           if (count > 0)
             Positioned(
-              right: -6,
-              top: -6,
-              child: CircleAvatar(
-                radius: 9,
+              right: -8,
+              top: -8,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: scheme.error,
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(color: scheme.surface, width: 2),
+                ),
                 child: Text(
-                  '$count',
-                  style: const TextStyle(fontSize: 11),
+                  count > 99 ? '99+' : '$count',
+                  style: TextStyle(
+                    color: scheme.onError,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w900,
+                    height: 1.1,
+                  ),
                 ),
               ),
             ),

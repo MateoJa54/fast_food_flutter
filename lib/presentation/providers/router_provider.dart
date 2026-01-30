@@ -19,6 +19,7 @@ import '../view/payments/payment_simulate_page.dart';
 import '../view/orders/create_order_page.dart';
 import '../view/orders/orders_history_page.dart';
 import '../view/recommendation/recommendations_page.dart';
+import '../view/catalog/categories_page.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final auth = FirebaseAuth.instance;

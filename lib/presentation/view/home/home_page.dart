@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
@@ -16,134 +18,140 @@ class HomePage extends ConsumerStatefulWidget {
 }
 
 class _HomePageState extends ConsumerState<HomePage> {
-  Future<void> _signOut() async {
-    await FirebaseAuth.instance.signOut();
-  }
+  Future<void> _signOut() async => FirebaseAuth.instance.signOut();
 
   @override
   void initState() {
     super.initState();
 
-    // 1) Registrar token FCM una sola vez al entrar (post-login)
     Future.microtask(() async {
       await ref.read(fcmRegisterServiceProvider).registerCurrentDeviceToken();
     });
 
-    // 2) Foreground: si llega notificación con la app abierta, mostramos SnackBar
     FirebaseMessaging.onMessage.listen((message) {
+      if (!mounted) return;
       final title = message.notification?.title ?? 'Notificación';
       final body = message.notification?.body ?? '';
-      if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('$title: $body')),
-      );
+      ScaffoldMessenger.of(context)
+        ..clearSnackBars()
+        ..showSnackBar(
+          SnackBar(
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.all(12),
+            content: Text(body.isEmpty ? title : '$title · $body'),
+            action: SnackBarAction(
+              label: 'Ver',
+              onPressed: () => context.push('/orders'),
+            ),
+          ),
+        );
     });
   }
 
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
+    final scheme = Theme.of(context).colorScheme;
+
+    final displayName = (user?.displayName?.trim().isNotEmpty ?? false) ? user!.displayName!.trim() : null;
+    final email = (user?.email?.trim().isNotEmpty ?? false) ? user!.email!.trim() : null;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('FastFood'),
-        actions: [
-          IconButton(
-            tooltip: 'Mis pedidos',
-            icon: const Icon(Icons.receipt_long),
-            onPressed: () => context.push('/orders'),
+      body: CustomScrollView(
+        slivers: [
+          SliverAppBar.large(
+            title: const Text('FastFood'),
+            floating: false,
+            pinned: true,
+            stretch: true,
+            actions: [
+              IconButton(
+                tooltip: 'Mis pedidos',
+                icon: const Icon(Icons.receipt_long),
+                onPressed: () => context.push('/orders'),
+              ),
+              const CartIconButton(),
+              IconButton(
+                tooltip: 'Cerrar sesión',
+                icon: const Icon(Icons.logout),
+                onPressed: _signOut,
+              ),
+            ],
           ),
-          const CartIconButton(),
-          IconButton(
-            tooltip: 'Cerrar sesión',
-            icon: const Icon(Icons.logout),
-            onPressed: _signOut,
-          ),
-        ],
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          // Header
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(14),
-              child: Row(
-                children: [
-                  const CircleAvatar(radius: 22, child: Icon(Icons.person)),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Bienvenido',
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          user != null ? 'UID: ${user.uid}' : 'Sin sesión',
-                          style: const TextStyle(fontSize: 12),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
+
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(16, 6, 16, 18),
+            sliver: SliverList(
+              delegate: SliverChildListDelegate(
+                [
+                  // Header premium
+                  _ProfileHeader(
+                    name: displayName ?? 'Bienvenido',
+                    subtitle: email ?? 'Listo para tu próximo pedido',
+                    onOrdersTap: () => context.push('/orders'),
                   ),
-                  IconButton(
-                    tooltip: 'Mis pedidos',
-                    icon: const Icon(Icons.arrow_forward),
-                    onPressed: () => context.push('/orders'),
+
+                  const SizedBox(height: 16),
+
+                  // Recomendaciones
+                  const RecommendationsSection(limit: 5),
+
+                  const SizedBox(height: 18),
+
+                  // Quick actions tipo iOS
+                  Text(
+                    'Accesos rápidos',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
                   ),
+                  const SizedBox(height: 10),
+
+                  Wrap(
+                    spacing: 10,
+                    runSpacing: 10,
+                    children: [
+                      _ActionPill(
+                        icon: Icons.fastfood,
+                        label: 'Ordenar ahora',
+                        tone: _PillTone.primary,
+                        onTap: () => context.push('/categories'),
+                      ),
+                      _ActionPill(
+                        icon: Icons.store,
+                        label: 'Locales',
+                        tone: _PillTone.neutral,
+                        onTap: () => context.push('/stores'),
+                      ),
+                      _ActionPill(
+                        icon: Icons.receipt_long,
+                        label: 'Mis pedidos',
+                        tone: _PillTone.neutral,
+                        onTap: () => context.push('/orders'),
+                      ),
+                      _ActionPill(
+                        icon: Icons.shopping_cart,
+                        label: 'Carrito',
+                        tone: _PillTone.neutral,
+                        onTap: () => context.push('/cart'),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 18),
+
+                  // Card “call to action” grande (más visual que ListTile)
+                  _BigCtaCard(
+                    title: 'Arma tu combo 🍗',
+                    subtitle: 'Explora el menú y personaliza tu pedido.',
+                    buttonText: 'Explorar categorías',
+                    onTap: () => context.push('/categories'),
+                    background: scheme.surfaceContainerHighest,
+                  ),
+
+                  const SizedBox(height: 26),
                 ],
               ),
             ),
-          ),
-
-          const SizedBox(height: 14),
-
-          // Recomendaciones IA (sección “Para ti”)
-          const RecommendationsSection(limit: 5),
-
-          const SizedBox(height: 18),
-
-          // Accesos rápidos
-          const Text(
-            'Accesos rápidos',
-            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
-          ),
-          const SizedBox(height: 10),
-
-          _QuickCard(
-            title: 'Ordenar ahora',
-            subtitle: 'Explora categorías y arma tu combo',
-            icon: Icons.fastfood,
-            onTap: () => context.push('/categories'),
-            primary: true,
-          ),
-          const SizedBox(height: 10),
-
-          _QuickCard(
-            title: 'Locales',
-            subtitle: 'Ver tiendas disponibles y ubicación',
-            icon: Icons.store,
-            onTap: () => context.push('/stores'),
-          ),
-          const SizedBox(height: 10),
-
-          _QuickCard(
-            title: 'Mis pedidos',
-            subtitle: 'Historial y tracking de órdenes',
-            icon: Icons.receipt_long,
-            onTap: () => context.push('/orders'),
-          ),
-          const SizedBox(height: 10),
-
-          _QuickCard(
-            title: 'Carrito',
-            subtitle: 'Revisa tu pedido antes de pagar',
-            icon: Icons.shopping_cart,
-            onTap: () => context.push('/cart'),
           ),
         ],
       ),
@@ -151,31 +159,170 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 }
 
-class _QuickCard extends StatelessWidget {
-  const _QuickCard({
+class _ProfileHeader extends StatelessWidget {
+  const _ProfileHeader({
+    required this.name,
+    required this.subtitle,
+    required this.onOrdersTap,
+  });
+
+  final String name;
+  final String subtitle;
+  final VoidCallback onOrdersTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(22),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: scheme.surfaceContainerHighest.withOpacity(0.75),
+            border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.2)),
+            borderRadius: BorderRadius.circular(22),
+          ),
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: 22,
+                backgroundColor: scheme.primaryContainer,
+                foregroundColor: scheme.onPrimaryContainer,
+                child: const Icon(Icons.person),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              FilledButton.tonalIcon(
+                onPressed: onOrdersTap,
+                icon: const Icon(Icons.receipt_long),
+                label: const Text('Pedidos'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+enum _PillTone { primary, neutral }
+
+class _ActionPill extends StatelessWidget {
+  const _ActionPill({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.tone = _PillTone.neutral,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final _PillTone tone;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
+    final bg = tone == _PillTone.primary ? scheme.primaryContainer : scheme.surfaceContainerHighest;
+    final fg = tone == _PillTone.primary ? scheme.onPrimaryContainer : scheme.onSurface;
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(999),
+      child: Ink(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.15)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 18, color: fg),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w800, color: fg),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BigCtaCard extends StatelessWidget {
+  const _BigCtaCard({
     required this.title,
     required this.subtitle,
-    required this.icon,
+    required this.buttonText,
     required this.onTap,
-    this.primary = false,
+    required this.background,
   });
 
   final String title;
   final String subtitle;
-  final IconData icon;
+  final String buttonText;
   final VoidCallback onTap;
-  final bool primary;
+  final Color background;
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: primary ? 2 : 1,
-      child: ListTile(
-        leading: CircleAvatar(child: Icon(icon)),
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
-        subtitle: Text(subtitle),
-        trailing: const Icon(Icons.chevron_right),
-        onTap: onTap,
+    return InkWell(
+      borderRadius: BorderRadius.circular(22),
+      onTap: onTap,
+      child: Ink(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: background,
+          borderRadius: BorderRadius.circular(22),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900)),
+                  const SizedBox(height: 6),
+                  Text(subtitle, style: Theme.of(context).textTheme.bodyMedium),
+                  const SizedBox(height: 12),
+                  FilledButton(
+                    onPressed: onTap,
+                    child: Text(buttonText),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 10),
+            const Icon(Icons.chevron_right, size: 26),
+          ],
+        ),
       ),
     );
   }
